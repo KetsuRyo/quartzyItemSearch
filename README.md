@@ -1,5 +1,3 @@
-# quartzyItemSearch
-
 
 # Quartzy CSV Analyzer
 
