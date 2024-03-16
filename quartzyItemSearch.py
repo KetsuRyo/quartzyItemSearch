@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from tkinter import messagebox
+import csv
 
 
 
@@ -78,7 +79,10 @@ class App:
         self.detail_popup.destroy()  # 显式销毁窗口
         self.detail_popup = None  # 重置 self.detail_popup 变量
 
-
+    def clean_column_names(self, df):
+        df.columns = df.columns.str.replace('="', '', regex=False)
+        df.columns = df.columns.str.replace('"', '', regex=False)
+        return df
 
     def show_item_monthly_details(self, item_name):
         # 基于选定的 Item Name, 找到所有相关的订单并按月份聚合
@@ -118,14 +122,30 @@ class App:
     def setup_upload_tab(self):
         self.load_button = tk.Button(self.upload_tab, text="Load CSV", command=self.load_csv)
         self.load_button.pack()
+    
+    def clean_value(self, value):
+        """移除字段值中的特殊格式"""
+        if isinstance(value, str):
+            return value.strip('="').rstrip('"')
+        return value
 
     def load_csv(self):
         file_path = filedialog.askopenfilename()
         if file_path:
-            self.data = pd.read_csv(file_path)
-            self.process_data()
+            # 使用 on_bad_lines='skip' 跳过不良行
+            self.data = pd.read_csv(file_path, on_bad_lines='skip')
+            
+            # 清理列名
+            self.data.columns = [self.clean_value(col) for col in self.data.columns]
+
+            # 清理数据
+            for col in self.data.columns:
+                self.data[col] = self.data[col].apply(self.clean_value)
+
+            self.process_data()  # 调用处理数据的方法
             messagebox.showinfo("读取完成", "CSV 文件读取并处理完成。")
-            self.switch_to_search_for_qty_tab()
+            self.switch_to_search_for_qty_tab()  # 切换到 SearchForQty 选项卡
+
 
     def switch_to_search_for_qty_tab(self):
         # 找到 "SearchForQty" 页面的索引
